@@ -27,15 +27,18 @@
 #define MAX_JUGADORES 2
 #define MAX_NOMBRE 20
 #define TAM_TABLERO 8
+#define CONFIGURACIONES 2
 
 #define BLANCAS 'O'
 #define NEGRAS 'X'
 #define VACIO '.'
 
 void solicitarJugadores(char[][MAX_NOMBRE]);
-void sorteo(char[][MAX_NOMBRE], int*, int*);
+void sorteoJugadores(char[][MAX_NOMBRE], int*, int*);
 void elegirColores(char[][MAX_NOMBRE], char[MAX_JUGADORES], int, int);
 void iniciarTablero(char[][TAM_TABLERO]);
+void moverFichas(char[][TAM_TABLERO], int, int, char);
+void sorteoConfiguracion(char[][TAM_TABLERO]);
 void mostrarTablero(char[][TAM_TABLERO]);
 
 int main() 
@@ -48,11 +51,13 @@ int main()
 
 	solicitarJugadores(jugadores);
 
-	sorteo(jugadores, &primero, &segundo);
+	sorteoJugadores(jugadores, &primero, &segundo);
 
 	elegirColores(jugadores, colores, primero, segundo);
 	
 	iniciarTablero(tablero);
+
+	sorteoConfiguracion(tablero);
 	
 	mostrarTablero(tablero);
 
@@ -67,7 +72,7 @@ void solicitarJugadores(char jugadores[][MAX_NOMBRE])
 	}	
 }
 
-void sorteo(char jugadores[][MAX_NOMBRE], int *primero, int *segundo)
+void sorteoJugadores(char jugadores[][MAX_NOMBRE], int *primero, int *segundo)
 {
 	srand(getpid());
 	*primero = rand() % MAX_JUGADORES; // Numero aleatorio entre 0 y 1.
@@ -114,6 +119,8 @@ void iniciarTablero(char tablero[][TAM_TABLERO])
 			tablero[i][j] = VACIO;
 		}
 	}
+
+
 }
 
 void mostrarTablero(char tablero[][TAM_TABLERO])
@@ -126,10 +133,40 @@ void mostrarTablero(char tablero[][TAM_TABLERO])
 	printf("\n");
 
 	for (int i = 0; i < TAM_TABLERO; i++) {
-		printf("\t\t\t\t%d | ", i + 1);
+		printf("\t\t\t\t%d | ", i + 1); // Alinear los numeros de fila e imprimirlos
 		for (int j = 0; j < TAM_TABLERO; j++) {
 			printf("%c ", tablero[i][j]);
 		}
 		printf("\n");
 	}
+}
+
+void sorteoConfiguracion(char tablero[][TAM_TABLERO])
+{
+	srand(getpid());
+	int configuracion_inicial = rand() % CONFIGURACIONES;
+
+	switch (configuracion_inicial) {
+		case 0:
+			moverFichas(tablero, 3, 3, BLANCAS);
+			moverFichas(tablero, 4, 4, BLANCAS);
+			moverFichas(tablero, 4, 3, NEGRAS);
+			moverFichas(tablero, 3, 4, NEGRAS);
+			break;
+
+		case 1:
+			moverFichas(tablero, 3, 3, BLANCAS);
+			moverFichas(tablero, 4, 3, BLANCAS);
+			moverFichas(tablero, 4, 4, NEGRAS);
+			moverFichas(tablero, 3, 4, NEGRAS);
+			break;
+	}
+}
+
+void moverFichas(char tablero [][TAM_TABLERO], int x, int y, char ficha)
+{
+	if (tablero[x][y] != VACIO) {
+		printf("[[ERROR]] Movimiento no valido. Esa casilla no esta vacia");
+	}
+	tablero[x][y] = ficha;
 }
