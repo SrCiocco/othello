@@ -41,7 +41,7 @@ void elegirColores(char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], in
 
 void iniciarTablero(char tablero[][TAM_TABLERO]);
 
-void moverFichas(char tablero[][TAM_TABLERO], int movimientos[MAX_JUGADORES], int x, int y, char ficha, int turno);
+int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], char ficha, int turno);
 
 void configCruz(char tablero[][TAM_TABLERO]);
 
@@ -50,8 +50,6 @@ void configColumna(char tablero[][TAM_TABLERO]);
 void sorteoConfiguracion(char tablero[][TAM_TABLERO]);
 
 void mostrarTablero(char tablero[][TAM_TABLERO]);
-
-void turnoHandler(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], int movimientos[MAX_JUGADORES], int *turno);
 
 int convertirLetra(char letra);
 
@@ -64,6 +62,7 @@ int main()
 	int primero;
 	int segundo;
 	int turno;
+	int se_movio;
 
 	solicitarJugadores(jugadores);
 
@@ -80,7 +79,8 @@ int main()
 	mostrarTablero(tablero);
 
 	do {
-		turnoHandler(tablero, jugadores, colores, movimientos, &turno);
+		se_movio = moverFichas(tablero, jugadores, movimientos, colores[turno], turno);
+		if (se_movio) turno = (turno + 1) % 2;
 		printf("\n\n\n\n\n\n\n\n\n");
 		mostrarTablero(tablero);
 		printf("\n\nMovimientos jugador nº1 (%s): %d\tMovimientos jugador nº2 (%s): %d\n\n", jugadores[primero], movimientos[primero], jugadores[segundo], movimientos[segundo]);
@@ -175,30 +175,44 @@ void sorteoConfiguracion(char tablero[][TAM_TABLERO])
 	}
 }
 
-void moverFichas(char tablero[][TAM_TABLERO], int movimientos[MAX_JUGADORES], int x, int y, char ficha, int turno)
-{
-	switch (tablero[x][y]) {
-		case VACIO:
-			tablero[x][y] = ficha;
-			movimientos[turno]++;
-			break;
-		default:
-			printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia\n\n");
-	}
-}
-
-void turnoHandler(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], int movimientos[MAX_JUGADORES], int *turno)
+int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], char ficha, int turno)
 {
 	char letra;
 	int x, y;
-		printf("\n%s, indica hacia donde quieres mover tu ficha (Letra y Numero): ", jugadores[*turno]);
-		scanf(" %c", &letra);
-		scanf(" %d", &x);
-		x--;
-		y = convertirLetra(letra);
-		moverFichas(tablero, movimientos, x, y, colores[*turno], *turno);
-		*turno = (*turno + 1) % 2;
+	int se_movio;
+
+	printf("\n%s, indica hacia donde quieres mover tu ficha (Letra y Numero): ", jugadores[turno]);
+	scanf(" %c", &letra);
+	scanf(" %d", &x);
+	x--;
+	y = convertirLetra(letra);
+
+	switch (tablero[x][y]) {
+		case VACIO:
+			if (ficha ) {
+			}
+			tablero[x][y] = ficha;
+			movimientos[turno]++;
+			se_movio = 1;
+			break;
+				
+		case BLANCAS:
+			printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia (HAY UNA FICHA BLANCA)\n\n");
+			se_movio = 0;
+			break;
+
+		case NEGRAS:
+			printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia (HAY UNA FICHA NEGRA)\n\n");
+			se_movio = 0;
+			break;
+
+		default:
+			printf("\t\t[[ERROR]] Movimiento no valido. FUERA DE RANGO.\n\n");
+			se_movio = 0;
+	}
+	return se_movio;
 }
+
 void configCruz(char tablero[][TAM_TABLERO])
 {
 	tablero[3][3] = BLANCAS;
@@ -217,40 +231,42 @@ void configColumna(char tablero[][TAM_TABLERO])
 
 int convertirLetra(char letra)
 {
+	int coord;
+
 	switch (letra) {
 		case 'A': case 'a':
-			return 0;
+			coord = 0;
 			break;
 
 		case 'B': case 'b':
-			return 1;
+			coord = 1;
 			break;
 
 		case 'C': case 'c':
-			return 2;
+			coord = 2;
 			break;
 
 		case 'D': case 'd':
-			return 3;
+			coord = 3;
 			break;
 
 		case 'E': case 'e':
-			return 4;
+			coord = 4;
 			break;
 
 		case 'F': case 'f':
-			return 5;
+			coord = 5;
 			break;
 
 		case 'G': case 'g':
-			return 6;
+			coord = 6;
 			break;
 
 		case 'H': case 'h':
-			return 7;
+			coord = 7;
 			break;
 		default:
 			printf("\nPor favor, selecciona una letra valida. (A-H).\n");
 	}
-	return 0;
+	return coord;
 }
