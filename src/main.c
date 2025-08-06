@@ -41,6 +41,8 @@ void elegirColores(char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], in
 
 void iniciarTablero(char tablero[][TAM_TABLERO]);
 
+int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha);
+
 int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], char ficha, int turno);
 
 void configCruz(char tablero[][TAM_TABLERO]);
@@ -175,41 +177,83 @@ void sorteoConfiguracion(char tablero[][TAM_TABLERO])
 	}
 }
 
+int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha)
+{
+	int captura = 0;
+
+	char rival;
+
+	if (ficha == BLANCAS) rival = NEGRAS;
+	else rival = BLANCAS;
+
+	for (int dx = -1; dx <= 1; dx++) {
+		for (int dy = -1; dy <= 1; dy++) {
+			if (dx == 0 && dy == 0) continue;
+
+			int i = dx + x;
+			int j = dy + y;
+			int cantidad_rival = 0;
+
+			while (i >= 0 && i < TAM_TABLERO && j >= 0 && j < TAM_TABLERO && tablero[i][j] == rival) {
+				i += dx;
+				j += dy;
+				cantidad_rival++;
+
+			}
+			if (cantidad_rival > 0 && i >= 0 && i < TAM_TABLERO && j >= 0 && j < TAM_TABLERO && tablero[i][j] == ficha) {
+				captura = 1;
+				int ii = x + dx;
+				int jj = y + dy;
+
+				while (tablero[ii][jj] == rival) {
+					tablero[ii][jj] = ficha;
+					ii += dx;
+					jj += dy;
+				}
+			}
+		}
+	}
+	return captura;
+}
 int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], char ficha, int turno)
 {
 	char letra;
 	int x, y;
-	int se_movio;
-
+	int se_movio = 0;
+	int captura;
 	printf("\n%s, indica hacia donde quieres mover tu ficha (Letra y Numero): ", jugadores[turno]);
 	scanf(" %c", &letra);
 	scanf(" %d", &x);
 	x--;
 	y = convertirLetra(letra);
 
-	switch (tablero[x][y]) {
-		case VACIO:
-			if (ficha ) {
-			}
+	if (x < 0 || x > TAM_TABLERO || y < 0 || y > TAM_TABLERO) {
+		printf("\t\t[[ERROR]] Movimiento no valido. FUERA DE RANGO.\n\n");
+		return se_movio;
+	}
+
+	if (tablero[x][y] == VACIO) {
+		captura = capturarFichas(tablero, x, y, ficha);
+		if (captura) {
 			tablero[x][y] = ficha;
 			movimientos[turno]++;
 			se_movio = 1;
-			break;
-				
-		case BLANCAS:
-			printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia (HAY UNA FICHA BLANCA)\n\n");
-			se_movio = 0;
-			break;
-
-		case NEGRAS:
-			printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia (HAY UNA FICHA NEGRA)\n\n");
-			se_movio = 0;
-			break;
-
-		default:
-			printf("\t\t[[ERROR]] Movimiento no valido. FUERA DE RANGO.\n\n");
-			se_movio = 0;
+		} else {
+			printf("\n[[ERROR]] No se puede poner la ficha. No captura ninguna ficha del rival.\n");
+			return se_movio;
+		}
 	}
+
+	else if (tablero[x][y] == BLANCAS) {
+		printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia (HAY UNA FICHA BLANCA)\n\n");
+		se_movio = 0;
+	}
+
+	else if (tablero[x][y] == NEGRAS) {
+		printf("\t\t[[ERROR]] Movimiento no valido. Esa casilla no esta vacia (HAY UNA FICHA NEGRA)\n\n");
+		se_movio = 0;
+	}
+
 	return se_movio;
 }
 
@@ -232,7 +276,6 @@ void configColumna(char tablero[][TAM_TABLERO])
 int convertirLetra(char letra)
 {
 	int coord;
-
 	switch (letra) {
 		case 'A': case 'a':
 			coord = 0;
@@ -267,6 +310,7 @@ int convertirLetra(char letra)
 			break;
 		default:
 			printf("\nPor favor, selecciona una letra valida. (A-H).\n");
-	}
+			coord = -1;
+		}
 	return coord;
 }
