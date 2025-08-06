@@ -41,9 +41,9 @@ void elegirColores(char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], in
 
 void iniciarTablero(char tablero[][TAM_TABLERO]);
 
-int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha);
+int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int puntos[MAX_JUGADORES], int turno);
 
-int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], char ficha, int turno);
+int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], char ficha, int turno);
 
 void configCruz(char tablero[][TAM_TABLERO]);
 
@@ -61,6 +61,7 @@ int main()
 	char colores[MAX_JUGADORES];
 	char tablero[TAM_TABLERO][TAM_TABLERO];
 	int movimientos[MAX_JUGADORES] = {0, 0};
+	int puntos[MAX_JUGADORES] = {0, 0};
 	int primero;
 	int segundo;
 	int turno;
@@ -81,11 +82,11 @@ int main()
 	mostrarTablero(tablero);
 
 	do {
-		se_movio = moverFichas(tablero, jugadores, movimientos, colores[turno], turno);
+		se_movio = moverFichas(tablero, jugadores, movimientos, puntos, colores[turno], turno);
 		if (se_movio) turno = (turno + 1) % 2;
 		printf("\n\n\n\n\n\n\n\n\n");
 		mostrarTablero(tablero);
-		printf("\n\nMovimientos jugador nº1 (%s): %d\tMovimientos jugador nº2 (%s): %d\n\n", jugadores[primero], movimientos[primero], jugadores[segundo], movimientos[segundo]);
+		printf("\n\nMovimientos jugador nº1 (%s): %d,\tPuntos: %d.\tMovimientos jugador nº2 (%s): %d,\tPuntos: %d.\n\n", jugadores[primero], movimientos[primero], puntos[primero], jugadores[segundo], movimientos[segundo], puntos[segundo]);
 	} while (1);
 
 	return 0;
@@ -177,7 +178,7 @@ void sorteoConfiguracion(char tablero[][TAM_TABLERO])
 	}
 }
 
-int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha)
+int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int puntos[MAX_JUGADORES], int turno)
 {
 	int captura = 0;
 
@@ -198,12 +199,12 @@ int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha)
 				i += dx;
 				j += dy;
 				cantidad_rival++;
-
 			}
 			if (cantidad_rival > 0 && i >= 0 && i < TAM_TABLERO && j >= 0 && j < TAM_TABLERO && tablero[i][j] == ficha) {
 				captura = 1;
 				int ii = x + dx;
 				int jj = y + dy;
+				puntos[turno] += cantidad_rival;
 
 				while (tablero[ii][jj] == rival) {
 					tablero[ii][jj] = ficha;
@@ -215,7 +216,7 @@ int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha)
 	}
 	return captura;
 }
-int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], char ficha, int turno)
+int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], char ficha, int turno)
 {
 	char letra;
 	int x, y;
@@ -233,7 +234,7 @@ int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int m
 	}
 
 	if (tablero[x][y] == VACIO) {
-		captura = capturarFichas(tablero, x, y, ficha);
+		captura = capturarFichas(tablero, x, y, ficha, puntos, turno);
 		if (captura) {
 			tablero[x][y] = ficha;
 			movimientos[turno]++;
