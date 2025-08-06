@@ -22,15 +22,19 @@
 
 #include <stdio.h>
 #include <stdlib.h> // rand(), srand()
-#include <unistd.h> // getpid()
+#include <unistd.h> // getpid(), system("clear")
 
 #define MAX_JUGADORES 2
 #define MAX_NOMBRE 20
 #define TAM_TABLERO 8
+
 #define CONFIGURACIONES 2
+#define CONFIG_CRUZ 0
+#define CONFIG_COLUMNA 1
 
 #define BLANCAS 'O'
 #define NEGRAS 'X'
+#define POSIBLE '*'
 #define VACIO '.'
 
 void solicitarJugadores(char jugadores[][MAX_NOMBRE]);
@@ -45,15 +49,17 @@ int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int pu
 
 int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], char ficha, int turno);
 
-void configCruz(char tablero[][TAM_TABLERO]);
-
-void configColumna(char tablero[][TAM_TABLERO]);
-
 void sorteoConfiguracion(char tablero[][TAM_TABLERO]);
 
 void mostrarTablero(char tablero[][TAM_TABLERO]);
 
 int convertirLetra(char letra);
+
+int jugadasPosibles(char tablero[][TAM_TABLERO], char ficha);
+
+void limpiarTablero(char tablero[][TAM_TABLERO]);
+
+void ganador(char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], int primero, int segundo);
 
 int main() 
 {
@@ -66,6 +72,7 @@ int main()
 	int segundo;
 	int turno;
 	int se_movio;
+	int jugadas_disponibles = 1;
 
 	solicitarJugadores(jugadores);
 
@@ -79,15 +86,25 @@ int main()
 
 	sorteoConfiguracion(tablero);
 
-	mostrarTablero(tablero);
+	while (jugadas_disponibles) {
 
-	do {
-		se_movio = moverFichas(tablero, jugadores, movimientos, puntos, colores[turno], turno);
-		if (se_movio) turno = (turno + 1) % 2;
-		printf("\n\n\n\n\n\n\n\n\n");
+		jugadas_disponibles = jugadasPosibles(tablero, colores[turno]);
+
+		if (jugadas_disponibles == 0) break;
+
 		mostrarTablero(tablero);
+
+		limpiarTablero(tablero);
+
+		se_movio = moverFichas(tablero, jugadores, movimientos, puntos, colores[turno], turno);
+
+		if (se_movio) turno = (turno + 1) % 2;
+
 		printf("\n\nMovimientos jugador nº1 (%s): %d,\tPuntos: %d.\tMovimientos jugador nº2 (%s): %d,\tPuntos: %d.\n\n", jugadores[primero], movimientos[primero], puntos[primero], jugadores[segundo], movimientos[segundo], puntos[segundo]);
-	} while (1);
+
+		}
+
+	ganador(jugadores, movimientos, puntos, primero, segundo);
 
 	return 0;
 }
@@ -152,6 +169,8 @@ void iniciarTablero(char tablero[][TAM_TABLERO])
 
 void mostrarTablero(char tablero[][TAM_TABLERO])
 {
+//	system("clear"); // Limpiar la pantalla.
+
 	printf("\t\t\t\t    A B C D E F G H\n"); // Alinear las letras con los numeros.
 
 	for (int i = 0; i < TAM_TABLERO; i++) {
@@ -163,20 +182,90 @@ void mostrarTablero(char tablero[][TAM_TABLERO])
 	}
 }
 
+void limpiarTablero(char tablero[][TAM_TABLERO])
+{
+	for (int i = 0; i < TAM_TABLERO; i++) {
+		for (int j = 0; j < TAM_TABLERO; j++) {
+			if (tablero[i][j] == POSIBLE) tablero[i][j] = VACIO;
+		}
+	}
+}
+
 void sorteoConfiguracion(char tablero[][TAM_TABLERO])
 {
 	srand(getpid());
-	int configuracion_inicial = rand() % CONFIGURACIONES;
+	int config_inicial = rand() % CONFIGURACIONES;
 
-	switch (configuracion_inicial) {
-		case 0:
-			configCruz(tablero);
-			break;
-		case 1:
-			configColumna(tablero);
-			break;
+	if (config_inicial == CONFIG_CRUZ) {
+		tablero[3][3] = BLANCAS;
+		tablero[4][4] = BLANCAS;
+		tablero[4][3] = NEGRAS;
+		tablero[3][4] = NEGRAS;
+	}
+	else if (config_inicial == CONFIG_COLUMNA) {
+		tablero[3][3] = BLANCAS;
+		tablero[4][3] = BLANCAS;
+		tablero[4][4] = NEGRAS;
+		tablero[3][4] = NEGRAS;
 	}
 }
+
+int jugadasPosibles(char tablero[][TAM_TABLERO], char ficha) {
+    int hay_jugada = 0;
+
+    char rival;
+
+    if (ficha == BLANCAS) rival = NEGRAS;
+    else rival = BLANCAS;
+
+    for (int fila = 0; fila < TAM_TABLERO; fila++) {
+        for (int col = 0; col < TAM_TABLERO; col++) {
+
+            if (tablero[fila][col] != VACIO) continue;
+
+            // Revisar en las 8 direcciones
+            int es_valida = 0;
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+
+                    if (dx == 0 && dy == 0) continue;
+
+                    int x = fila + dx;
+                    int y = col + dy;
+                    int cantidad_rival = 0;
+
+                    // Mientras siga viendo fichas del rival
+                    while (x >= 0 && x < TAM_TABLERO &&
+                           y >= 0 && y < TAM_TABLERO &&
+                           tablero[x][y] == rival) {
+
+                        cantidad_rival++;
+                        x += dx;
+                        y += dy;
+                    }
+
+                    // Si vi al menos una del rival y termina en una mía, es válida
+                    if (cantidad_rival > 0 &&
+                        x >= 0 && x < TAM_TABLERO &&
+                        y >= 0 && y < TAM_TABLERO &&
+                        tablero[x][y] == ficha) {
+
+                        es_valida = 1;
+                    }
+                }
+            }
+
+            if (es_valida) {
+                tablero[fila][col] = POSIBLE;
+                hay_jugada = 1;
+            }
+        }
+    }
+
+    return hay_jugada;
+}
+
 
 int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int puntos[MAX_JUGADORES], int turno)
 {
@@ -205,7 +294,6 @@ int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int pu
 				int ii = x + dx;
 				int jj = y + dy;
 				puntos[turno] += cantidad_rival;
-
 				while (tablero[ii][jj] == rival) {
 					tablero[ii][jj] = ficha;
 					ii += dx;
@@ -216,6 +304,7 @@ int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int pu
 	}
 	return captura;
 }
+
 int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], char ficha, int turno)
 {
 	char letra;
@@ -225,16 +314,22 @@ int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int m
 	printf("\n%s, indica hacia donde quieres mover tu ficha (Letra y Numero): ", jugadores[turno]);
 	scanf(" %c", &letra);
 	scanf(" %d", &x);
-	x--;
+	x--; // Cualquiera sea el valor de x le resto 1 para que coincida con la escala del tablero.
 	y = convertirLetra(letra);
 
 	if (x < 0 || x > TAM_TABLERO || y < 0 || y > TAM_TABLERO) {
 		printf("\t\t[[ERROR]] Movimiento no valido. FUERA DE RANGO.\n\n");
-		return se_movio;
+		return se_movio; /* Directamente devuelve 0 ya que el movimiento
+				  * es invalido. */
 	}
 
-	if (tablero[x][y] == VACIO) {
-		captura = capturarFichas(tablero, x, y, ficha, puntos, turno);
+	if (tablero[x][y] == VACIO) { /* Si el tablero esta vacio en esa
+				       * posicion entonces... */
+
+		captura = capturarFichas(tablero, x, y, ficha, puntos, turno); /* Comprobamos si es posible 
+										* capturar fichas 
+										* moviendonos a esa posicion. */
+
 		if (captura) {
 			tablero[x][y] = ficha;
 			movimientos[turno]++;
@@ -258,23 +353,9 @@ int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int m
 	return se_movio;
 }
 
-void configCruz(char tablero[][TAM_TABLERO])
-{
-	tablero[3][3] = BLANCAS;
-	tablero[4][4] = BLANCAS;
-	tablero[4][3] = NEGRAS;
-	tablero[3][4] = NEGRAS;
-}
-
-void configColumna(char tablero[][TAM_TABLERO])
-{
-	tablero[3][3] = BLANCAS;
-	tablero[4][3] = BLANCAS;
-	tablero[4][4] = NEGRAS;
-	tablero[3][4] = NEGRAS;
-}
-
-int convertirLetra(char letra)
+int convertirLetra(char letra) /* Esta funcion me va a devolver la letra que
+				* introduzcamos "convertida" a numero, para
+				* poder ser usada como coordenada en el tablero. */
 {
 	int coord;
 	switch (letra) {
@@ -315,3 +396,22 @@ int convertirLetra(char letra)
 		}
 	return coord;
 }
+void ganador(char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], int primero, int segundo) 
+{
+	if (puntos[primero] > puntos[segundo]) {
+		system("clear");
+		printf("Felicidades %s, ganaste!!!\n", jugadores[primero]);
+	} 
+
+	else if (puntos[primero] < puntos[segundo]){
+		system("clear");
+		printf("Felicidades %s, ganaste!!!\n", jugadores[segundo]);
+
+	} else {
+		system("clear");
+		printf("Empate!!!\n");
+	}
+
+	printf("\tResumen de la partida: Movimientos jugador nº1 (%s): %d,\tPuntos: %d.\tMovimientos jugador nº2 (%s): %d,\tPuntos: %d.", jugadores[primero], movimientos[primero], puntos[primero], jugadores[segundo], movimientos[segundo], puntos[segundo]);
+}
+
