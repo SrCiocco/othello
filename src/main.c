@@ -47,7 +47,6 @@
 #define ESPERA_ERROR 2
 
 // Funciones relacionadas al tablero:
-
 void iniciarTablero(char tablero[][TAM_TABLERO]);
 
 void mostrarTablero(char tablero[][TAM_TABLERO]);
@@ -59,7 +58,6 @@ void sorteoConfiguracion(char tablero[][TAM_TABLERO]);
 int jugadasPosibles(char tablero[][TAM_TABLERO], char ficha);
 
 // Funciones relacionadas al jugador:
-
 void solicitarJugadores(char jugadores[][MAX_NOMBRE]);
 
 int sorteoJugadores(char jugadores[][MAX_NOMBRE], int *segundo);
@@ -69,7 +67,6 @@ void elegirColores(char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], in
 void ganador(char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], int primero, int segundo);
 
 // Funciones relacionadas a las fichas:
-
 int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int puntos[MAX_JUGADORES], int turno);
 
 int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], char ficha, int turno);
@@ -77,10 +74,9 @@ int moverFichas(char tablero[][TAM_TABLERO], char jugadores[][MAX_NOMBRE], int m
 int convertirLetra(char letra);
 
 // Funciones relacionadas al juego en si:
+void juego(char jugadores[][MAX_NOMBRE]);
 
 int revancha();
-
-void juego(char jugadores[][MAX_NOMBRE]);
 
 int main() 
 {
@@ -98,6 +94,99 @@ int main()
 	} while (seguir_jugando); // Si el jugador no quiere seguir jugando entonces se termina el juego.
 
 	return 0;
+}
+
+void iniciarTablero(char tablero[][TAM_TABLERO])
+{
+		for (int i = 0; i < TAM_TABLERO; i++) {
+			for (int j = 0; j < TAM_TABLERO; j++) {
+				tablero[i][j] = VACIO;
+			}
+		}
+}
+
+void mostrarTablero(char tablero[][TAM_TABLERO])
+{
+	printf("\t\t\t\t    A B C D E F G H\n"); // Alinear las letras con los numeros.
+
+	for (int i = 0; i < TAM_TABLERO; i++) {
+		printf("\t\t\t\t%d | ", i + 1); // Alinear los numeros e imprimirlos
+		for (int j = 0; j < TAM_TABLERO; j++) {
+			printf("%c ", tablero[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+void limpiarTablero(char tablero[][TAM_TABLERO])
+{
+	for (int i = 0; i < TAM_TABLERO; i++) {
+		for (int j = 0; j < TAM_TABLERO; j++) {
+			if (tablero[i][j] == POSIBLE) tablero[i][j] = VACIO;
+		}
+	}
+}
+
+void sorteoConfiguracion(char tablero[][TAM_TABLERO])
+{
+	srand(getpid());
+	int config_inicial = rand() % CONFIGURACIONES; // Numero aleatorio entre 0 y 1.
+
+	if (config_inicial == CONFIG_CRUZ) { // 0.
+		tablero[3][3] = BLANCAS;
+		tablero[4][4] = BLANCAS;
+		tablero[4][3] = NEGRAS;
+		tablero[3][4] = NEGRAS;
+	}
+	else if (config_inicial == CONFIG_COLUMNA) { // 1.
+		tablero[3][3] = BLANCAS;
+		tablero[4][3] = BLANCAS;
+		tablero[4][4] = NEGRAS;
+		tablero[3][4] = NEGRAS;
+	}
+}
+
+int jugadasPosibles(char tablero[][TAM_TABLERO], char ficha) 
+{
+	int hay_jugada = 0;
+	char rival;
+
+	if (ficha == BLANCAS) rival = NEGRAS;
+	else rival = BLANCAS;
+
+	for (int x = 0; x < TAM_TABLERO; x++) {
+		for (int y = 0; y < TAM_TABLERO; y++) {
+			if (tablero[x][y] != VACIO) continue;
+
+			int es_valida = 0;
+
+			for (int delta_x = -1; delta_x <= 1; delta_x++) {
+				for (int delta_y = -1; delta_y <= 1; delta_y++) {
+					if (delta_x == 0 && delta_y == 0) continue;
+
+					int tmp_x = x + delta_x;
+					int tmp_y = y + delta_y;
+					int cantidad_rival = 0;
+					while (tmp_x >= 0 && tmp_x < TAM_TABLERO && tmp_y >= 0 && tmp_y < TAM_TABLERO && tablero[tmp_x][tmp_y] == rival) { // Mientras siga viendo fichas del rival.
+						cantidad_rival++;
+						tmp_x += delta_x;
+						tmp_y += delta_y;
+					}
+
+					if (cantidad_rival > 0 && tmp_x >= 0 && tmp_x < TAM_TABLERO && tmp_y >= 0 && tmp_y < TAM_TABLERO && tablero[tmp_x][tmp_y] == ficha) { // Si vi al menos una del rival y termina en una mia, es valida.
+						es_valida = 1;
+					}
+				}
+			}
+
+			if (es_valida) {
+				tablero[x][y] = POSIBLE;
+				hay_jugada = 1;
+			}
+		}
+	}
+
+	return hay_jugada;
 }
 
 void solicitarJugadores(char jugadores[][MAX_NOMBRE])
@@ -152,97 +241,23 @@ void elegirColores(char jugadores[][MAX_NOMBRE], char colores[MAX_JUGADORES], in
 	} while (color_elegido != 'B' && color_elegido != 'b' && color_elegido != 'N' && color_elegido != 'n');
 }
 
-void iniciarTablero(char tablero[][TAM_TABLERO])
+void ganador(char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], int primero, int segundo) 
 {
-		for (int i = 0; i < TAM_TABLERO; i++) {
-			for (int j = 0; j < TAM_TABLERO; j++) {
-				tablero[i][j] = VACIO;
-			}
-		}
-}
+	if (puntos[primero] > puntos[segundo]) {
+		system("clear");
+		printf("Felicidades %s, ganaste!!!\n", jugadores[primero]);
+	} 
 
-void mostrarTablero(char tablero[][TAM_TABLERO])
-{
-	printf("\t\t\t\t    A B C D E F G H\n"); // Alinear las letras con los numeros.
+	else if (puntos[primero] < puntos[segundo]){
+		system("clear");
+		printf("Felicidades %s, ganaste!!!\n", jugadores[segundo]);
 
-	for (int i = 0; i < TAM_TABLERO; i++) {
-		printf("\t\t\t\t%d | ", i + 1); // Alinear los numeros e imprimirlos
-		for (int j = 0; j < TAM_TABLERO; j++) {
-			printf("%c ", tablero[i][j]);
-		}
-		printf("\n");
-	}
-}
-
-void limpiarTablero(char tablero[][TAM_TABLERO])
-{
-	for (int i = 0; i < TAM_TABLERO; i++) {
-		for (int j = 0; j < TAM_TABLERO; j++) {
-			if (tablero[i][j] == POSIBLE) tablero[i][j] = VACIO;
-		}
-	}
-}
-
-void sorteoConfiguracion(char tablero[][TAM_TABLERO])
-{
-	srand(getpid());
-	int config_inicial = rand() % CONFIGURACIONES;
-
-	if (config_inicial == CONFIG_CRUZ) {
-		tablero[3][3] = BLANCAS;
-		tablero[4][4] = BLANCAS;
-		tablero[4][3] = NEGRAS;
-		tablero[3][4] = NEGRAS;
-	}
-	else if (config_inicial == CONFIG_COLUMNA) {
-		tablero[3][3] = BLANCAS;
-		tablero[4][3] = BLANCAS;
-		tablero[4][4] = NEGRAS;
-		tablero[3][4] = NEGRAS;
-	}
-}
-
-int jugadasPosibles(char tablero[][TAM_TABLERO], char ficha) 
-{
-	int hay_jugada = 0;
-	char rival;
-
-	if (ficha == BLANCAS) rival = NEGRAS;
-	else rival = BLANCAS;
-
-	for (int x = 0; x < TAM_TABLERO; x++) {
-		for (int y = 0; y < TAM_TABLERO; y++) {
-			if (tablero[x][y] != VACIO) continue;
-
-			int es_valida = 0;
-
-			for (int delta_x = -1; delta_x <= 1; delta_x++) {
-				for (int delta_y = -1; delta_y <= 1; delta_y++) {
-					if (delta_x == 0 && delta_y == 0) continue;
-
-					int tmp_x = x + delta_x;
-					int tmp_y = y + delta_y;
-					int cantidad_rival = 0;
-					while (tmp_x >= 0 && tmp_x < TAM_TABLERO && tmp_y >= 0 && tmp_y < TAM_TABLERO && tablero[tmp_x][tmp_y] == rival) { // Mientras siga viendo fichas del rival.
-						cantidad_rival++;
-						tmp_x += delta_x;
-						tmp_y += delta_y;
-					}
-
-					if (cantidad_rival > 0 && tmp_x >= 0 && tmp_x < TAM_TABLERO && tmp_y >= 0 && tmp_y < TAM_TABLERO && tablero[tmp_x][tmp_y] == ficha) { // Si vi al menos una del rival y termina en una mia, es valida.
-						es_valida = 1;
-					}
-				}
-			}
-
-			if (es_valida) {
-				tablero[x][y] = POSIBLE;
-				hay_jugada = 1;
-			}
-		}
+	} else {
+		system("clear");
+		printf("Empate!!!\n");
 	}
 
-	return hay_jugada;
+	printf("\tResumen de la partida: Movimientos jugador nº1 (%s): %d,\tPuntos: %d.\tMovimientos jugador nº2 (%s): %d,\tPuntos: %d.\n\n", jugadores[primero], movimientos[primero], puntos[primero], jugadores[segundo], movimientos[segundo], puntos[segundo]);
 }
 
 int capturarFichas(char tablero[][TAM_TABLERO], int x, int y, char ficha, int puntos[MAX_JUGADORES], int turno)
@@ -378,24 +393,6 @@ int convertirLetra(char letra) /* Esta funcion me va a devolver la letra que
 			coord = -1;
 		}
 	return coord;
-}
-void ganador(char jugadores[][MAX_NOMBRE], int movimientos[MAX_JUGADORES], int puntos[MAX_JUGADORES], int primero, int segundo) 
-{
-	if (puntos[primero] > puntos[segundo]) {
-		system("clear");
-		printf("Felicidades %s, ganaste!!!\n", jugadores[primero]);
-	} 
-
-	else if (puntos[primero] < puntos[segundo]){
-		system("clear");
-		printf("Felicidades %s, ganaste!!!\n", jugadores[segundo]);
-
-	} else {
-		system("clear");
-		printf("Empate!!!\n");
-	}
-
-	printf("\tResumen de la partida: Movimientos jugador nº1 (%s): %d,\tPuntos: %d.\tMovimientos jugador nº2 (%s): %d,\tPuntos: %d.\n\n", jugadores[primero], movimientos[primero], puntos[primero], jugadores[segundo], movimientos[segundo], puntos[segundo]);
 }
 
 void juego (char jugadores[][MAX_NOMBRE])
